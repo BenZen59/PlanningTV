@@ -3,54 +3,49 @@ import fetchPlanningTV from "./api/planningTvApi";
 import "./App.css";
 
 function App() {
-  // État pour stocker les données récupérées
-  const [tvData, setTvData] = useState([]);
+  const [shows, setShows] = useState([]);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Récupérer les données via fetchPlanningTV
-    const getData = async () => {
+    const fetchData = async () => {
       try {
         const data = await fetchPlanningTV();
-        console.log(data); // Inspecter les données de l'API
-        setTvData(data); // Stocker les données dans l'état
-      } catch (err) {
-        setError(
-          "Une erreur est survenue lors de la récupération des données.",
+
+        // Trie les séries par popularité décroissante
+        const sortedShows = (data.results || []).sort(
+          (a, b) => b.popularity - a.popularity
         );
-      } finally {
-        setLoading(false);
+
+        setShows(sortedShows);
+      } catch (err) {
+        setError(err); // Gère les erreurs
       }
     };
 
-    getData();
+    fetchData();
   }, []);
 
   return (
     <div className="App">
-      <h1>Planning TV</h1>
-      {loading && <p>Chargement des données...</p>}
-      {error && <p className="error">{error}</p>}
-      {!loading && !error && (
-        <ul>
-          {tvData.length > 0 ? (
-            tvData.map((show) => {
-              const airDate = show.first_air_date
-                ? new Date(show.first_air_date).toLocaleDateString("fr-FR")
-                : "Non disponible";
-              return (
-                <li key={show.id}>
-                  <strong>{show.name}</strong> - Première diffusion le :{" "}
-                  {airDate}
-                </li>
-              );
-            })
-          ) : (
-            <p>Aucun épisode à venir.</p>
-          )}
-        </ul>
-      )}
+      <h1>Émissions TV les plus populaires diffusées aujourd'hui</h1>
+      {error && <p className="error">Erreur : {error.message}</p>}
+      <div className="shows-container">
+        {shows.map((show) => (
+          <div key={show.id} className="show-card">
+            <img
+              src={`https://image.tmdb.org/t/p/w200${show.poster_path}`}
+              alt={`${show.name} Poster`}
+              className="show-poster"
+            />
+            <div className="show-details">
+              <h2 className="show-title">{show.name}</h2>
+              <p className="show-score">Score : {show.vote_average}/10</p>
+              <p className="show-date">Date de début : {show.first_air_date}</p>
+              {/* <p className="show-popularity">Popularité : {show.popularity}</p> */}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
